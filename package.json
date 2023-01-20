@@ -1,6 +1,6 @@
 {
   "name": "bx-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "bx-cli helps you get started building a cool bookletix.com plugin in just a few seconds.",
   "main": "bin/index.js",
   "scripts": {
@@ -26,7 +26,7 @@
     "lodash": "^4.17.21"
   },
   "bin": {
-    "hello": "./bin/index.js"
+    "bx-cli": "./bin/index.js"
   },
   "dependencies": {
     "yargs": "^17.1.1-candidate.0"
