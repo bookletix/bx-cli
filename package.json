@@ -1,6 +1,6 @@
 {
   "name": "bx-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "bx-cli helps you get started building a cool bookletix.com plugin in just a few seconds.",
   "main": "bin/index.js",
   "scripts": {
