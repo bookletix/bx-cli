@@ -6,8 +6,9 @@ const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
 const FormData = require('form-data');
-const yargs = require('yargs/yargs')
-const { hideBin } = require('yargs/helpers')
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
+const appRoot = require('app-root-path');
 
 yargs(hideBin(process.argv))
     .command('publish', 'publish plugin', (yargs) => {
@@ -33,7 +34,7 @@ yargs(hideBin(process.argv))
             throw "email or password is required";
         }
 
-        publish(email, password)
+        publish(email, password);
     })
     .option('email', {
         alias: 'e',
@@ -64,7 +65,7 @@ function publish(email, password) {
     });
 
     async function readContent(fileName) {
-        let file = path.join(__dirname, fileName);
+        let file = path.join(appRoot.toString(), fileName);
         return await fs.readFile(file, {encoding: 'utf-8'}).then((data) => {
             return data.toString()
         });
@@ -165,11 +166,17 @@ function publish(email, password) {
             state = JSON.stringify(manifest.state)
         }
 
+        let isPublic = false
+        if (!_.isNil(manifest.isPublic)) {
+            isPublic = manifest.isPublic
+        }
+
         let plugin = {
             status: "active",
             version: manifest.version,
             name: manifest.name,
             cover: name,
+            isPublic: isPublic,
             description: manifest.description,
             edit: await readContent(manifest.entry.edit),
             view: await readContent(manifest.entry.view),

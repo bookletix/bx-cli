@@ -1,6 +1,6 @@
 {
   "name": "bx-cli",
-  "version": "1.0.3",
+  "version": "1.0.8",
   "description": "bx-cli helps you get started building a cool bookletix.com plugin in just a few seconds.",
   "main": "bin/index.js",
   "scripts": {
@@ -19,16 +19,15 @@
     "url": "https://github.com/bookletix/bx-cli/issues"
   },
   "homepage": "https://github.com/bookletix/bx-cli#readme",
-  "devDependencies": {
-    "axios": "^1.2.3",
-    "dotenv": "^16.0.3",
-    "form-data": "^4.0.0",
-    "lodash": "^4.17.21"
-  },
   "bin": {
     "bx-cli": "./bin/index.js"
   },
   "dependencies": {
-    "yargs": "^17.1.1-candidate.0"
+    "app-root-path": "^3.1.0",
+    "yargs": "^17.1.1-candidate.0",
+    "axios": "^1.2.3",
+    "dotenv": "^16.0.3",
+    "form-data": "^4.0.0",
+    "lodash": "^4.17.21"
   }
 }
