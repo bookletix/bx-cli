@@ -18,78 +18,6 @@ const shell = require('shelljs');
 const SKIP_FILES = ['node_modules'];
 const CURR_DIR = process.cwd();
 
-function createDirectoryContents(templatePath, folderName, data) {
-    const filesToCreate = fs.readdirSync(templatePath);
-
-    filesToCreate.forEach(file => {
-        const origFilePath = path.join(templatePath, file);
-
-        // get stats about the current file
-        const stats = fs.statSync(origFilePath);
-
-        if (SKIP_FILES.indexOf(file) > -1) return;
-
-        if (stats.isFile()) {
-            let contents = fs.readFileSync(origFilePath, 'utf8');
-
-            contents = ejs.render(contents, data);
-
-            if (['_tmp.gitignore'].indexOf(file) > -1) {
-                file = file.replace('_tmp', '');
-            }
-
-            const writePath = path.join(CURR_DIR, folderName, file);
-            fs.writeFileSync(writePath, contents, 'utf8');
-        } else if (stats.isDirectory()) {
-            fs.mkdirSync(path.join(CURR_DIR, folderName, file));
-
-            // recursive call
-            createDirectoryContents(path.join(templatePath, file), path.join(folderName, file), data);
-        }
-    });
-}
-
-function createFolder(folderName) {
-    if (fs.existsSync(folderName)) {
-        console.log(chalk.red(`Folder ${folderName} exists. Delete or use another name.`));
-        return false;
-    }
-
-    fs.mkdirSync(folderName);
-    return true;
-}
-
-function postProcessNode(folderName) {
-    console.log(chalk.green(`
-    project "${chalk.white.bold(folderName)}" is created!
-    
-    ${chalk.white.bold(`See examples of real plugins here`)}
-    https://github.com/bookletix/plugin-samples
-    ${chalk.gray(`(it will help you understand more quickly)`)}
-    
-    ${chalk.blue.bold('>')} ${chalk.yellow.bold('run')} npm install
-    `));
-
-    shell.cd(folderName);
-
-    let cmd = '';
-   if (shell.which('npm')) {
-        cmd = 'npm install';
-    }
-
-    if (cmd) {
-        const result = shell.exec(cmd);
-
-        if (result.code !== 0) {
-            return false;
-        }
-    } else {
-        console.log(chalk.red('No npm found. Cannot run installation.'));
-    }
-
-    return true;
-}
-
 yargs(hideBin(process.argv))
     .command('init', 'initial new plugin', (yargs) => {
         return yargs
@@ -129,16 +57,6 @@ yargs(hideBin(process.argv))
                 default: 'default plugin description',
             },
             {
-                name: 'answerRequired',
-                type: 'boolean',
-                message: 'Is answer required?',
-                validate: (input) => {
-                    if (/^(true|false)$/.test(input)) return true;
-                    else return 'put true or false';
-                },
-                default: false,
-            },
-            {
                 name: 'bookletixEmail',
                 type: 'string',
                 validate: (input) => {
@@ -163,7 +81,6 @@ yargs(hideBin(process.argv))
                 const templPath = path.join(__dirname, 'templates', pluginTemplate);
                 const pluginDescription = answers['description'];
                 const pluginName = answers['name'];
-                const answerRequired = answers['answerRequired'];
                 const bookletixEmail = answers['bookletixEmail'];
                 const bookletixPassword = answers['bookletixPassword'];
 
@@ -172,7 +89,6 @@ yargs(hideBin(process.argv))
                     folderName,
                     pluginTemplate,
                     pluginDescription,
-                    answerRequired,
                     bookletixEmail,
                     bookletixPassword,
                 });
@@ -208,8 +124,6 @@ yargs(hideBin(process.argv))
         if (_.isNil(email) || _.isNil(password)) {
             throw "email or password is required";
         }
-
-        console.log(logo())
 
         publish(email, password);
     })
@@ -364,6 +278,10 @@ function publish(email, password) {
             state: state
         }
 
+        console.log(`
+        ${chalk.hex('#9451e6').bold(`booklet${chalk.hex('#E77194').bold('ix')}
+        `)}`)
+
         let t = '\x1b[37mStatus\x1b[0m'
         let tID = '\x1b[37mID\x1b[0m'
         let tName = '\x1b[37mPlugin\x1b[0m'
@@ -390,6 +308,79 @@ function publish(email, password) {
 
     login(email, password).then(authFlow);
 }
+
+function createDirectoryContents(templatePath, folderName, data) {
+    const filesToCreate = fs.readdirSync(templatePath);
+
+    filesToCreate.forEach(file => {
+        const origFilePath = path.join(templatePath, file);
+
+        // get stats about the current file
+        const stats = fs.statSync(origFilePath);
+
+        if (SKIP_FILES.indexOf(file) > -1) return;
+
+        if (stats.isFile()) {
+            let contents = fs.readFileSync(origFilePath, 'utf8');
+
+            contents = ejs.render(contents, data);
+
+            if (['_tmp.gitignore'].indexOf(file) > -1) {
+                file = file.replace('_tmp', '');
+            }
+
+            const writePath = path.join(CURR_DIR, folderName, file);
+            fs.writeFileSync(writePath, contents, 'utf8');
+        } else if (stats.isDirectory()) {
+            fs.mkdirSync(path.join(CURR_DIR, folderName, file));
+
+            // recursive call
+            createDirectoryContents(path.join(templatePath, file), path.join(folderName, file), data);
+        }
+    });
+}
+
+function createFolder(folderName) {
+    if (fs.existsSync(folderName)) {
+        console.log(chalk.red(`Folder ${folderName} exists. Delete or use another name.`));
+        return false;
+    }
+
+    fs.mkdirSync(folderName);
+    return true;
+}
+
+function postProcessNode(folderName) {
+    console.log(chalk.green(`
+    project "${chalk.white.bold(folderName)}" is created!
+    
+    ${chalk.white.bold(`See examples of real plugins here`)}
+    https://github.com/bookletix/plugin-samples
+    ${chalk.gray(`(it will help you understand more quickly)`)}
+    
+    ${chalk.blue.bold('>')} ${chalk.yellow.bold('run')} npm install
+    `));
+
+    shell.cd(folderName);
+
+    let cmd = '';
+    if (shell.which('npm')) {
+        cmd = 'npm install';
+    }
+
+    if (cmd) {
+        const result = shell.exec(cmd);
+
+        if (result.code !== 0) {
+            return false;
+        }
+    } else {
+        console.log(chalk.red('No npm found. Cannot run installation.'));
+    }
+
+    return true;
+}
+
 
 function logo() {
     const pur = chalk.hex('#E77194').bold
