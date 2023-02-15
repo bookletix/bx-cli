@@ -1,0 +1,20 @@
+{
+  "status": "active",
+  "version": "0.0.1",
+  "name": "<%= pluginName %>",
+  "description": "<%= pluginDescription %>",
+  "tags": [],
+
+  "icon": "./dist/icon.png",
+
+  "settings" : {
+    "answerRequired": <%= answerRequired %>
+  },
+
+  "entry": {
+    "state": "./dist/state.json",
+    "handler": "./dist/handler.js",
+    "edit": "./dist/edit.html",
+    "view": "./dist/view.html"
+  }
+}
