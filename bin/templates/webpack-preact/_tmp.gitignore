@@ -1,5 +1,1 @@
-/node_modules/
-/package-lock.json
-/.env
-/dist/view.js.LICENSE.txt
-/dist/edit.js.LICENSE.txt
+/Users/stanislavsemenov/pp/bx-cli/testplug/.gitignore

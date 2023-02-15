@@ -15,7 +15,7 @@ const chalk = require('chalk');
 const ejs = require('ejs');
 const shell = require('shelljs');
 
-const SKIP_FILES = ['node_modules', '_tmp.gitignore'];
+const SKIP_FILES = ['node_modules'];
 const CURR_DIR = process.cwd();
 
 function createDirectoryContents(templatePath, folderName, data) {
@@ -33,6 +33,10 @@ function createDirectoryContents(templatePath, folderName, data) {
             let contents = fs.readFileSync(origFilePath, 'utf8');
 
             contents = ejs.render(contents, data);
+
+            if (['_tmp.gitignore'].indexOf(file) > -1) {
+                file = file.replace('_tmp', '');
+            }
 
             const writePath = path.join(CURR_DIR, folderName, file);
             fs.writeFileSync(writePath, contents, 'utf8');
