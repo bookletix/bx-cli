@@ -14,9 +14,15 @@ const inquirer = require('inquirer');
 const chalk = require('chalk');
 const ejs = require('ejs');
 const shell = require('shelljs');
+const open = require('open');
+const base64url = require('base64-url');
+const express = require('express')
+const LocalStorage = require('node-localstorage').LocalStorage
 
 const SKIP_FILES = ['node_modules'];
 const CURR_DIR = process.cwd();
+
+const localStorage = new LocalStorage('./tmp');
 
 yargs(hideBin(process.argv))
     .command('init', 'initial new plugin', (yargs) => {
@@ -100,6 +106,42 @@ yargs(hideBin(process.argv))
     })
     .parse()
 
+// auth
+yargs(hideBin(process.argv))
+    .command('login', 'auth on bookletix.com', (yargs) => {
+        return yargs
+    }, async (argv) => {
+        const app = express();
+
+        const payload = {
+            authUrl: "http://localhost:9990/bxauth",
+            expirationTime: ""
+        }
+
+        let resolve;
+        const p = new Promise((_resolve) => {
+            resolve = _resolve;
+        });
+        app.get('/bxauth', function(req, res) {
+            resolve(req.query.at);
+            res.redirect(`https://bookletix.com/app/login/`+base64url.encode(JSON.stringify(payload))+`/done`);
+            res.end('');
+        });
+        const server = await app.listen(9990);
+
+        open(`https://bookletix.com/app/login/`+base64url.encode(JSON.stringify(payload))+`/bx-cli`);
+
+        const code = await p;
+
+        await server.close();
+
+        localStorage.setItem('at', code);
+
+        console.log(chalk.green(`Logged in successfully with token `));
+        process.exit(0);
+    })
+    .parse()
+
 // publish flow
 yargs(hideBin(process.argv))
     .command('publish', 'publish plugin on bookletix.com', (yargs) => {
@@ -107,7 +149,7 @@ yargs(hideBin(process.argv))
     }, (argv) => {
         const result = dotenv.config();
         if (result.error) {
-            throw result.error;
+            console.log( localStorage.getItem("at") ? 'login get' : result.error)
         }
 
         let email = process.env.EMAIL;
@@ -119,10 +161,6 @@ yargs(hideBin(process.argv))
 
         if (!_.isNil(argv.password)) {
             password = argv.password
-        }
-
-        if (_.isNil(email) || _.isNil(password)) {
-            throw "email or password is required";
         }
 
         publish(email, password);
@@ -221,6 +259,10 @@ function publish(email, password) {
     }
 
     async function login(email, password) {
+        if (!_.isNil(localStorage.getItem('at'))) {
+            return localStorage.getItem('at')
+        }
+
         try {
             const response = await instance.post('/v1/admin/users/login', {
                 validateStatus: function (status) {
@@ -238,11 +280,6 @@ function publish(email, password) {
         } catch (error) {
             throw error;
         }
-    }
-
-    if (_.isNil(process.env.EMAIL) || _.isNil(process.env.PASSWORD)) {
-        console.log(chalk.red(`There is no email or password field in the .env file`));
-        return;
     }
 
     let authFlow = async (accessToken) => {
