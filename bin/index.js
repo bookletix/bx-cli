@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const dotenv = require('dotenv');
 const _ = require('lodash');
 const axios = require('axios');
 const fs = require('fs');
@@ -18,11 +17,12 @@ const open = require('open');
 const base64url = require('base64-url');
 const express = require('express')
 const LocalStorage = require('node-localstorage').LocalStorage
+const os = require("os");
 
 const SKIP_FILES = ['node_modules'];
 const CURR_DIR = process.cwd();
 
-const localStorage = new LocalStorage('./tmp');
+const localStorage = new LocalStorage(`${os.homedir()}/.bx-cli/storage`);
 
 yargs(hideBin(process.argv))
     .command('init', 'initial new plugin', (yargs) => {
@@ -61,21 +61,7 @@ yargs(hideBin(process.argv))
                 type: 'input',
                 message: 'Plugin description:',
                 default: 'default plugin description',
-            },
-            {
-                name: 'bookletixEmail',
-                type: 'string',
-                validate: (input) => {
-                    if (/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(input)) return true;
-                    else return 'You entered a wrong email';
-                },
-                message: 'Bookletix account login(email):',
-            },
-            {
-                name: 'bookletixPassword',
-                type: 'password',
-                message: 'Bookletix account password:',
-            },
+            }
         ];
 
         inquirer.prompt(QUESTIONS)
@@ -114,7 +100,7 @@ yargs(hideBin(process.argv))
         const app = express();
 
         const payload = {
-            authUrl: "http://localhost:9990/bxauth",
+            authUrl: "9990",
             expirationTime: ""
         }
 
@@ -136,7 +122,6 @@ yargs(hideBin(process.argv))
         await server.close();
 
         localStorage.setItem('at', code);
-
         console.log(chalk.green(`Logged in successfully with token `));
         process.exit(0);
     })
@@ -147,37 +132,20 @@ yargs(hideBin(process.argv))
     .command('publish', 'publish plugin on bookletix.com', (yargs) => {
         return yargs
     }, (argv) => {
-        const result = dotenv.config();
-        if (result.error) {
-            console.log( localStorage.getItem("at") ? 'login get' : result.error)
+        if (_.isNil(localStorage.getItem("at"))) {
+            console.log(`
+                ${chalk.red(`You are not authorized on bookletix.com!`)}
+                ${chalk.gray(`run command`)}: ${chalk.white.bold(`npx bx-cli login`)}
+            `);
+
+            process.exit(0);
         }
 
-        let email = process.env.EMAIL;
-        let password = process.env.PASSWORD;
-
-        if (!_.isNil(argv.email)) {
-            email = argv.email
-        }
-
-        if (!_.isNil(argv.password)) {
-            password = argv.password
-        }
-
-        publish(email, password);
-    })
-    .option('email', {
-        alias: 'e',
-        type: 'string',
-        description: 'bookletix.com user email'
-    })
-    .option('password', {
-        alias: 'e',
-        type: 'string',
-        description: 'bookletix.com user password'
+        publish();
     })
     .parse()
 
-function publish(email, password) {
+function publish() {
     let baseUrl = "https://api.bookletix.com"
     let manifestEntryFile = "manifest.json"
 
@@ -258,28 +226,12 @@ function publish(email, password) {
         });
     }
 
-    async function login(email, password) {
+    async function login() {
         if (!_.isNil(localStorage.getItem('at'))) {
             return localStorage.getItem('at')
         }
 
-        try {
-            const response = await instance.post('/v1/admin/users/login', {
-                validateStatus: function (status) {
-                    return status === 200;
-                },
-                email: email,
-                password: password
-            });
-
-            if (!_.isNil(response.data.data.accessToken)) {
-                return response.data.data.accessToken
-            }
-
-            return "";
-        } catch (error) {
-            throw error;
-        }
+        return ""
     }
 
     let authFlow = async (accessToken) => {
@@ -343,7 +295,7 @@ function publish(email, password) {
         });
     }
 
-    login(email, password).then(authFlow);
+    login().then(authFlow);
 }
 
 function createDirectoryContents(templatePath, folderName, data) {
