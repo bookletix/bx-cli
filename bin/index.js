@@ -23,6 +23,7 @@ const SKIP_FILES = ['node_modules'];
 const CURR_DIR = process.cwd();
 
 const localStorage = new LocalStorage(`${os.homedir()}/.bx-cli/storage`);
+let baseUrl = "https://api.bookletix.com"
 
 yargs(hideBin(process.argv))
     .command('init', 'initial new plugin', (yargs) => {
@@ -118,11 +119,41 @@ yargs(hideBin(process.argv))
         open(`https://bookletix.com/app/login/`+base64url.encode(JSON.stringify(payload))+`/bx-cli`);
 
         const code = await p;
-
         await server.close();
 
         localStorage.setItem('at', code);
-        console.log(chalk.green(`Logged in successfully with token `));
+
+        async function getCurrent(at) {
+            const instance = axios.create({
+                baseURL: baseUrl
+            });
+
+            try {
+                instance.defaults.headers.common['Authorization'] = "Bearer " + at;
+                const response = await instance.get('/v1/users/current', {
+                    validateStatus: function (status) {
+                        return status === 200;
+                    },
+                });
+                if (response.data.data.email) {
+                    return response.data.data.email;
+                }
+                return null
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        let emailResolve;
+        const pe = new Promise((_emailResolve) => {
+            emailResolve = _emailResolve;
+        });
+        getCurrent(code).then(async function (email) {
+            emailResolve(email);
+        })
+        const email = await pe;
+
+        console.log(chalk.green(`Logged in successfully ${chalk.yellow.bold(email)}`));
         process.exit(0);
     })
     .parse()
@@ -146,7 +177,6 @@ yargs(hideBin(process.argv))
     .parse()
 
 function publish() {
-    let baseUrl = "https://api.bookletix.com"
     let manifestEntryFile = "manifest.json"
 
     if (!_.isNil(process.env.API_URL) && process.env.API_URL.length > 0) {
